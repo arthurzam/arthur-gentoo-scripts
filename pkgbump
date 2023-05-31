@@ -1,0 +1,12 @@
+#!/bin/bash
+
+LATEST=$(pquery --max --repo "$(git rev-parse --show-toplevel)")
+NEW="$(qatom -C -F "%{PN}-${1:?Missing new version}.ebuild" ${LATEST})"
+cp "$(qatom -C -F "%{PF}.ebuild" ${LATEST})" "${NEW}" || exit 1
+ekeyword ~all "${NEW}" || exit 1
+pkgdev manifest || exit 1
+
+if compgen -G "/run/user/1000/vscode-*" >& /dev/null; then
+    echo "Opening ${NEW} in vscode"
+    vscode "${NEW}"
+fi

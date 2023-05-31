@@ -1,0 +1,3 @@
+#!/bin/bash
+path=$(git rev-parse --show-prefix)
+echo "${path%/}"

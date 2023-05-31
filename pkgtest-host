@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [[ $EUID != 0 ]] && [[ $EUID != 250 ]]; then
+    exec doas $0 $@
+fi
+
+/usr/bin/systemd-run --wait --collect --pty --pipe --machine=amd64-testing --user --working-directory="${PWD/home\/arthur/root}" pkgtest

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e
+
+LATEST=$(pquery --max --repo "$(git rev-parse --show-toplevel)")
+FILE=$(qatom -C -F "%{PF}.ebuild" ${LATEST})
+gpy-impl ${FILE} +python3_12 -python3_7 -python3_8 -python3_9
+
+if compgen -G "/run/user/${UID}/vscode-*" >&/dev/null; then
+    echo "Opening ${FILE} in vscode"
+    code --reuse-window "${FILE}"
+fi

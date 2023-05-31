@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -e
+
+LATEST=$(pquery --max --repo "$(git rev-parse --show-toplevel)")
+FILE=$(qatom -C -F "%{PF}.ebuild" ${LATEST})
+NEW="$(ebump ${FILE} |& grep -o '^[^:]*').ebuild"
+sed -e '/EAPI/s/=.*$/=8/' -e '/DISTUTILS_USE_SETUPTOOLS/d' -i ${NEW}
+if ! grep -qF DISTUTILS_USE_PEP517 ${NEW}; then
+    sed -e '/PYTHON_COMPAT/i DISTUTILS_USE_PEP517=setuptools' -i ${NEW}
+fi
+! diff -u --color ${FILE} ${NEW}
+
+if compgen -G "/run/user/${UID}/vscode-*" >&/dev/null; then
+    echo "Opening ${FILE} in vscode"
+    code --reuse-window "${NEW}"
+fi

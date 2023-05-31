@@ -1,0 +1,65 @@
+#!/bin/bash
+# If arch is given on the command line, don't try to read arch from the list
+
+cd ~/dev/gentoo
+
+# Original IFS
+original_IFS=${IFS}
+
+git pull --rebase
+
+bugs="${@}"
+
+for bug in ${bugs} ; do
+	if [[ -z ${arch} ]] ; then
+		# Takes the tuple, shoves it into a list
+		# Pulls out the bug ID and arch
+		IFS="," bug_arch=( ${bug} )
+		bug_num=${bug_arch[0]:?missing BUGNO}
+		bug_arch=${bug_arch[1]:?missing ARCH}
+
+		# Reset
+		IFS=${original_IFS}
+	else
+		bug_num=${bug}
+		bug_arch=${arch}
+	fi
+
+	nattka apply -a ${bug_arch} ${bug_num}
+
+	if ! [[ $? -eq 0 ]] ; then
+		# We can't include this bug
+		echo "Bug ${bug_num} failed in nattka apply"
+		# Delete from the list so we don't 'nattka resolve' it
+		bugs=${bugs[@]/${bug}}
+	fi
+
+	nattka commit -a ${bug_arch} ${bug_num}
+
+    if ! [[ $? -eq 0 ]] ; then
+		# We can't include this bug
+		echo "Bug ${bug_num} failed in nattka commit"
+		# Delete from the list so we don't 'nattka resolve' it
+		bugs=${bugs[@]/${bug}}
+	fi
+done
+
+for bug in ${bugs} ; do
+	if [[ -z ${arch} ]] ; then
+		# Takes the tuple, shoves it into a list
+		# Pulls out the bug ID and arch
+		IFS="," bug_arch=( ${bug} )
+		bug_num=${bug_arch[0]}
+		bug_arch=${bug_arch[1]}
+
+		# Reset
+		IFS=${original_IFS}
+	else
+		bug_num=${bug}
+		bug_arch=${arch}
+	fi
+
+	nattka --api-key ${ARCHTESTER_BUGZILLA_APIKEY} resolve -a ${bug_arch} ${bug_num}
+done
+
+git pull --rebase && pkgdev push

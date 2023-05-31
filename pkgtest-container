@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [[ -n ${TEST_CWD} ]]; then
+    [[ -d ${TEST_CWD} ]] && cd "${TEST_CWD}"
+    unset TEST_CWD
+fi
+
+prepare_test || exit 1
+if [[ ${#} == 0 ]]; then
+    set -- "$(qatom -C -F "=%{CATEGORY}/%{PF}" "$(pquery --max --repo "$(git rev-parse --show-toplevel)")")"
+fi
+FEATURES="test -buildpkg" emerge --jobs 1 --quiet-build n --oneshot $@

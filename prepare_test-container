@@ -1,0 +1,5 @@
+#!/bin/bash
+if [[ ${#} -eq 0 ]]; then
+        set -- $(pkg)
+fi
+emerge --onlydeps -vq1 --with-test-deps $@
