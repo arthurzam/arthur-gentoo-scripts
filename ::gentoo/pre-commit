@@ -2,18 +2,32 @@
 
 exec 1>&2
 
-limit=10240 # max 10KB patch size
-git diff --cached --name-only HEAD --diff-filter=d | xargs -n 1 du -bs | while read size name; do
-    if [[ ${size} -ge ${limit} && ${name} == *.patch ]]; then
-        echo ">>> Error: ${name} is too big, move to ~dev"
+source /lib/gentoo/functions.sh || :
+
+# Get list of staged files
+readarray -t FILESLIST < <(git --no-pager diff --cached --name-only HEAD --diff-filter=d)
+
+MAX_PATCH=10240 # max 10KB patch size
+for name in "${FILESLIST[@]}"; do
+    # Skip if file does not exist
+    [[ -f "${name}" ]] || continue
+
+    # Check patch file sizes
+    if [[ ${name} == *.patch && $(wc --bytes < "${name}") -ge ${MAX_PATCH} ]]; then
+        eerror ">>> Error: ${name} is too big, move to ~dev"
+        exit 1
+    # Check for compressed files
+    elif file --mime "${name}" | grep -q "compressed"; then
+        eerror ">>> Error: ${name} shows as compressed file, and should not be put in repo"
+        eerror ">>> Check and fix the file, or fix the git-hook if mistaken"
         exit 1
     fi
 done
 
-git diff --cached --name-only HEAD --diff-filter=d | while read name; do
-    if file "${name}" | grep -q "compressed"; then
-        echo ">>> Error: ${name} shows as compressed file, and should not be put in repo"
-        echo ">>> Check and fix the file, or fix the git-hook if mistaken"
-        exit 1
-    fi
-done
+# Update PYTHON_COMPAT in ebuilds if needed
+readarray -t PYTHON_EBUILDS < <(grep -l -e 'PYTHON_COMPAT' --include="*.ebuild" "${FILESLIST[@]}")
+if (( ${#PYTHON_EBUILDS[@]} > 0 )); then
+    ebegin "Updating PYTHON_COMPAT in ${#PYTHON_EBUILDS[@]} ebuilds"
+    xargs gpy-impl -@dead "${PYTHON_EBUILDS[@]}" && git add "${PYTHON_EBUILDS[@]}"
+    eend $? || exit 1
+fi
