@@ -25,9 +25,9 @@ for name in "${FILESLIST[@]}"; do
 done
 
 # Update PYTHON_COMPAT in ebuilds if needed
-readarray -t PYTHON_EBUILDS < <(grep -l -e 'PYTHON_COMPAT' --include="*.ebuild" "${FILESLIST[@]}")
+readarray -t PYTHON_EBUILDS < <(grep -l -e 'PYTHON_COMPAT[^$]*$' --include="*.ebuild" "${FILESLIST[@]}")
 if (( ${#PYTHON_EBUILDS[@]} > 0 )); then
     ebegin "Updating PYTHON_COMPAT in ${#PYTHON_EBUILDS[@]} ebuilds"
-    xargs gpy-impl -@dead "${PYTHON_EBUILDS[@]}" && git add "${PYTHON_EBUILDS[@]}"
+    gpy-impl -@dead "${PYTHON_EBUILDS[@]}" && git add "${PYTHON_EBUILDS[@]}"
     eend $? || exit 1
 fi
