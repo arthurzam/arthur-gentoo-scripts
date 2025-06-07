@@ -1,0 +1,14 @@
+#!/bin/bash
+# Idea given by Sam James <sam@gentoo.org>
+
+exec 1>&2
+
+git ls-files --others --exclude-standard | while read name; do
+    if [[ ${name} == *.patch ]]; then
+        echo ">>> Error: found uncommited patch: ${name}"
+        echo ">>> Add it if you forgot, or stash it if you know what you do"
+        exit 1
+    fi
+done
+
+check-mismatched-packages

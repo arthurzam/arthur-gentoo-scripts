@@ -1,0 +1,19 @@
+#!/bin/bash
+
+exec 1>&2
+
+limit=10240 # max 10KB patch size
+git diff --cached --name-only HEAD --diff-filter=d | xargs -n 1 du -bs | while read size name; do
+    if [[ ${size} -ge ${limit} && ${name} == *.patch ]]; then
+        echo ">>> Error: ${name} is too big, move to ~dev"
+        exit 1
+    fi
+done
+
+git diff --cached --name-only HEAD --diff-filter=d | while read name; do
+    if file "${name}" | grep -q "compressed"; then
+        echo ">>> Error: ${name} shows as compressed file, and should not be put in repo"
+        echo ">>> Check and fix the file, or fix the git-hook if mistaken"
+        exit 1
+    fi
+done
